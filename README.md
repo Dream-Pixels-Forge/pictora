@@ -1,15 +1,17 @@
 # Pictora
 
-AI image generator powered by Google Gemini and Imagen models. Generate, edit, and iterate on images with multimodal prompts.
+AI image generator powered by Agnes AI Hub and ComfyUI. Generate, edit, and iterate on images with multimodal prompts.
 
 ## Features
 
-- **Multi-model support** — Gemini 2.5 Flash, Gemini 3.1 Flash, Gemini 3 Pro, Imagen 4.0/3.0
+- **Multi-provider support** — Agnes AI (open-source), ComfyUI (self-hosted)
 - **Prompt refinement** — AI-powered prompt enhancement and randomization
 - **Image references** — Subject, scene, and style image inputs
 - **Aspect ratio presets** — 1:1, 16:9, 9:16, 4:3, 3:4, and more
 - **Variations** — Generate multiple variations from a single prompt
 - **AI inpainting** — Edit generated images with mask-based AI editing
+- **Storyboard mode** — Create and refine film storyboards with AI assistance
+- **Export formats** — PDF, HTML, contact sheets, and individual images
 - **ComfyUI integration** — Self-hosted image generation via ComfyUI
 
 ## Getting Started
@@ -18,10 +20,11 @@ AI image generator powered by Google Gemini and Imagen models. Generate, edit, a
 pnpm install
 ```
 
-Copy `.env.example` to `.env` and add your Gemini API key:
+Copy `.env.example` to `.env` and add your Agnes AI API key:
 
 ```
-GEMINI_API_KEY="your-api-key-here"
+AGNES_API_KEY="your-api-key-here"
+AGNES_API_URL="https://apihub.agnes-ai.com/v1"  # optional, default shown
 ```
 
 Start the dev server:
@@ -35,10 +38,10 @@ pnpm dev
 - React 19 + TypeScript
 - Vite
 - Zustand (state management)
-- Google Gen AI SDK (`@google/genai`)
+- Agnes AI Hub (OpenAI-compatible API)
 - Tailwind CSS
-- Framer Motion
+- Motion (Framer Motion rebranded)
 
 ## API Key
 
-Get your free Gemini API key at [Google AI Studio](https://aistudio.google.com/app/apikey). Quotas are per Google Cloud project — create a new project for additional quota or enable billing.
+Get your Agnes AI API key at [Agnes AI Hub](https://apihub.agnes-ai.com). Quotas and pricing vary by provider tier.

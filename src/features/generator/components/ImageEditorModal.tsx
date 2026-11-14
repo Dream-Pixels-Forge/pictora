@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Sparkles, Sliders, Brush, Eraser, RotateCcw, Download, Check, RefreshCw, Layers, Eye, Info } from "lucide-react";
-import { useGeneratorStore } from "../store/useGeneratorStore";
-import { GoogleGenAI } from "@google/genai";
+import { useGeneratorStore, agnesFetch, parseAgnesError } from "../store/useGeneratorStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +14,7 @@ interface ImageEditorModalProps {
 type TabType = "ai" | "filters";
 
 export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ image, isOpen, onClose }) => {
-  const { updateImage, geminiApiKey, geminiModel, provider, comfyUiUrl } = useGeneratorStore();
+  const { updateImage, provider, comfyUiUrl } = useGeneratorStore();
   
   const [activeTab, setActiveTab] = useState<TabType>("ai");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -281,24 +280,22 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ image, isOpe
     }
 
     setIsProcessing(true);
-    toast.info("Sending granular image edit to Gemini...");
+    toast.info("Sending granular image edit to Agnes...");
 
     try {
       // Setup API and connection
-      const activeKey = geminiApiKey || process.env.GEMINI_API_KEY || "";
+      const { agnesApiKey, agnesApiUrl, agnesImageModel } = useGeneratorStore.getState();
+      const activeKey = agnesApiKey || process.env.AGNES_API_KEY || "";
       if (!activeKey) {
-        throw new Error("Gemini API Key is missing. Please configure it in the Generator settings tab.");
+        throw new Error("Agnes API Key is missing. Please configure it in the Generator settings tab.");
       }
 
-      const ai = new GoogleGenAI({ apiKey: activeKey });
-      
       // Determine if a mask was painted
       const canvas = paintCanvasRef.current;
       let hasMask = false;
       let maskDataUrl = "";
       
       if (canvas) {
-        // Check if there are drawn pixels
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -315,7 +312,7 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ image, isOpe
         }
       }
 
-      // Convert active base image to base64
+      // Convert active base image to base64 data URI
       const responseImg = await fetch(image.upscaledUrl || image.url);
       const blob = await responseImg.blob();
       const base64Url = await new Promise<string>((resolve, reject) => {
@@ -324,123 +321,121 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ image, isOpe
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-      const [header, imgBase64] = base64Url.split(",");
-      const mimeType = header.split(":")[1].split(";")[0];
+      const imgDataUri = base64Url;
 
-      // Formulate custom content payload instructions
-      const parts: any[] = [
-        { inlineData: { data: imgBase64, mimeType } },
-        { 
-          text: `You are a high-level creative AI image modifier. 
-The user wants to edit this image structure. 
-Base prompt description: "${image.prompt}".
-Precise requested edit instruction: "${editPrompt}".
-${hasMask ? "A specific regional mask was highlighted indicating where changes should manifest. Keep the rest of the image completely unchanged." : ""}
-Return a beautifully edited new image that satisfies this change with elite realism, maintaining high artistic style and structure consistency with the original.` 
-        }
-      ];
-
-      // If they drew a mask, we can additionally pass the mask overlay into Gemini to guide focal points!
+      // Build image refs array (base image + optional mask)
+      const imageRefs: string[] = [imgDataUri];
       if (hasMask && maskDataUrl) {
-        const [maskHeader, maskBase64] = maskDataUrl.split(",");
-        parts.push({ 
-          inlineData: { data: maskBase64, mimeType: "image/png" } 
-        });
-        parts.push({ text: "Use this highlighted red mask to precisely identify the focal bounding container to replace / edit." });
+        imageRefs.push(maskDataUrl);
       }
 
-      // Request Gemini multimodal generation
-      const modelToUse = geminiModel || "gemini-2.0-flash";
-      const res = await ai.models.generateContent({
-        model: modelToUse,
-        contents: { parts },
-        config: {
-          responseModalities: ["IMAGE"]
-        }
-      });
+      let lastEditError: any = null;
+      const maxEditAttempts = 3;
 
-      const firstCandidate = res.candidates?.[0];
-      const part = firstCandidate?.content?.parts?.find(p => p.inlineData);
+      for (let attempt = 0; attempt < maxEditAttempts; attempt++) {
+        try {
+          const adjustedEditPrompt = attempt === 0
+            ? editPrompt
+            : (attempt === 1
+                ? `${editPrompt}, creative variation, masterpiece level`
+                : `${editPrompt}, detailed composition adjust, high resolution blend`);
 
-      if (!part || !part.inlineData?.data) {
-        throw new Error("No image data returned from Gemini. Tone down safety parameters or re-word prompt.");
-      }
+          const data = await agnesFetch(
+            "/images/generations",
+            {
+              model: agnesImageModel || "agnes-image-2.5-flash",
+              prompt: `You are a high-level creative AI image modifier. The user wants to edit this image structure. Base prompt description: "${image.prompt}". Precise requested edit instruction: "${adjustedEditPrompt}". ${hasMask ? "A specific regional mask was highlighted indicating where changes should manifest. Keep the rest of the image completely unchanged." : ""} Return a beautifully edited new image that satisfies this change with elite realism, maintaining high artistic style and structure consistency with the original.`,
+              n: 1,
+              size: "2K",
+              extra_body: {
+                response_format: "b64_json",
+                image: imageRefs,
+              },
+            },
+            activeKey
+          );
 
-      const returnedMime = part.inlineData.mimeType || "image/png";
-      const returnedBase64 = `data:${returnedMime};base64,${part.inlineData.data}`;
-
-      // Composite local blending if region mask matches
-      if (hasMask && canvas) {
-        // Draw both onto a local canvas to achieve true inpaint-layer masking
-        const originalImg = new Image();
-        originalImg.crossOrigin = "anonymous";
-        originalImg.src = image.upscaledUrl || image.url;
-        await new Promise(r => originalImg.onload = r);
-
-        const replacementImg = new Image();
-        replacementImg.src = returnedBase64;
-        await new Promise(r => replacementImg.onload = r);
-
-        const compositeCanvas = document.createElement("canvas");
-        compositeCanvas.width = originalImg.naturalWidth;
-        compositeCanvas.height = originalImg.naturalHeight;
-        
-        const compositeCtx = compositeCanvas.getContext("2d");
-        if (compositeCtx) {
-          // 1. Draw original background
-          compositeCtx.drawImage(originalImg, 0, 0);
-
-          // 2. Create high-resolution version of mask to match composition sizes
-          const hdMaskCanvas = document.createElement("canvas");
-          hdMaskCanvas.width = originalImg.naturalWidth;
-          hdMaskCanvas.height = originalImg.naturalHeight;
-          const hdMaskCtx = hdMaskCanvas.getContext("2d");
-          if (hdMaskCtx) {
-            hdMaskCtx.drawImage(canvas, 0, 0, hdMaskCanvas.width, hdMaskCanvas.height);
+          const b64 = data.data?.[0]?.b64_json || data.data?.[0]?.url;
+          if (!b64) {
+            throw new Error("No image data returned from Agnes.");
           }
-
-          // 3. Draw replacement image masked only in painted parts
-          compositeCtx.save();
-          // Set clipping mask using alpha of hd mask
-          const maskImgData = hdMaskCtx?.getImageData(0, 0, hdMaskCanvas.width, hdMaskCanvas.height);
-          if (maskImgData) {
-            // Apply clipping mask
-            compositeCtx.globalCompositeOperation = "source-over";
-            
-            // We draw the replacement, then use the mask to blend
-            const offscreenCanvas = document.createElement("canvas");
-            offscreenCanvas.width = originalImg.naturalWidth;
-            offscreenCanvas.height = originalImg.naturalHeight;
-            const offscreenCtx = offscreenCanvas.getContext("2d");
-            if (offscreenCtx) {
-              offscreenCtx.drawImage(replacementImg, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-              
-              // Apply mask alpha to replacement
-              const repImgData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-              for (let i = 3; i < repImgData.data.length; i += 4) {
-                const maskAlpha = maskImgData.data[i];
-                // Multiply target alphas
-                repImgData.data[i] = Math.round((repImgData.data[i] * maskAlpha) / 255);
-              }
-              offscreenCtx.putImageData(repImgData, 0, 0);
-              
-              // Layer composite
-              compositeCtx.drawImage(offscreenCanvas, 0, 0);
-            }
-          }
-          compositeCtx.restore();
           
-          const finishedComp = compositeCanvas.toDataURL("image/png");
-          setEditedResultUrl(finishedComp);
+          const returnedBase64 = b64.startsWith('http') ? b64 : `data:image/png;base64,${b64}`;
+
+          // Composite local blending if region mask matches
+          if (hasMask && canvas) {
+            const originalImg = new Image();
+            originalImg.crossOrigin = "anonymous";
+            originalImg.src = image.upscaledUrl || image.url;
+            await new Promise(r => originalImg.onload = r);
+
+            const replacementImg = new Image();
+            replacementImg.src = returnedBase64;
+            await new Promise(r => replacementImg.onload = r);
+
+            const compositeCanvas = document.createElement("canvas");
+            compositeCanvas.width = originalImg.naturalWidth;
+            compositeCanvas.height = originalImg.naturalHeight;
+            
+            const compositeCtx = compositeCanvas.getContext("2d");
+            if (compositeCtx) {
+              compositeCtx.drawImage(originalImg, 0, 0);
+
+              const hdMaskCanvas = document.createElement("canvas");
+              hdMaskCanvas.width = originalImg.naturalWidth;
+              hdMaskCanvas.height = originalImg.naturalHeight;
+              const hdMaskCtx = hdMaskCanvas.getContext("2d");
+              if (hdMaskCtx) {
+                hdMaskCtx.drawImage(canvas, 0, 0, hdMaskCanvas.width, hdMaskCanvas.height);
+              }
+
+              compositeCtx.save();
+              const maskImgData = hdMaskCtx?.getImageData(0, 0, hdMaskCanvas.width, hdMaskCanvas.height);
+              if (maskImgData) {
+                compositeCtx.globalCompositeOperation = "source-over";
+                const offscreenCanvas = document.createElement("canvas");
+                offscreenCanvas.width = originalImg.naturalWidth;
+                offscreenCanvas.height = originalImg.naturalHeight;
+                const offscreenCtx = offscreenCanvas.getContext("2d");
+                if (offscreenCtx) {
+                  offscreenCtx.drawImage(replacementImg, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+                  const repImgData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+                  for (let i = 3; i < repImgData.data.length; i += 4) {
+                    const maskAlpha = maskImgData.data[i];
+                    repImgData.data[i] = Math.round((repImgData.data[i] * maskAlpha) / 255);
+                  }
+                  offscreenCtx.putImageData(repImgData, 0, 0);
+                  compositeCtx.drawImage(offscreenCanvas, 0, 0);
+                }
+              }
+              compositeCtx.restore();
+              
+              const finishedComp = compositeCanvas.toDataURL("image/png");
+              setEditedResultUrl(finishedComp);
+            }
+          } else {
+            setEditedResultUrl(returnedBase64);
+          }
+
+          toast.success("AI Edit completed successfully!");
+          return;
+        } catch (e: any) {
+          console.warn(`Edit attempt ${attempt + 1} failed:`, e);
+          lastEditError = e;
+          if (e.message?.includes("Quota exceeded") || e.message?.includes("RESOURCE_EXHAUSTED") || e.status === 429) {
+            throw e;
+          }
         }
-      } else {
-        setEditedResultUrl(returnedBase64);
       }
 
-      toast.success("AI Edit completed successfully!");
+      if (lastEditError?.message?.includes("recitation") || lastEditError?.message?.includes("RECITATION") || lastEditError?.message?.includes("NO_IMAGE")) {
+        throw new Error("Strict recitation filters blocked this image edit task. Please try a slightly different variation of your edit prompt.");
+      }
+      throw lastEditError || new Error("No image data returned from Agnes. Tone down safety parameters or re-word edit prompt.");
     } catch (e: any) {
       console.error(e);
-      toast.error(e.message || "Failed to make AI edit.");
+      const parsedMessage = parseAgnesError(e);
+      toast.error(parsedMessage || "Failed to make AI edit.", { duration: 8000 });
     } finally {
       setIsProcessing(false);
     }

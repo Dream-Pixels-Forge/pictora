@@ -1,5 +1,6 @@
 {
   "name": "Pictora",
   "description": "AI Image Generator Application",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_AI_IMAGE_GENERATION", "MAJOR_CAPABILITY_AI_CHAT_COMPLETIONS"]
 }

@@ -1,6 +1,6 @@
 import React, { useMemo, useLayoutEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Download, User, MapPin, PenTool, Trash2, RefreshCw, Crop, Clock, Sparkles, Brush, Sliders } from "lucide-react";
+import { Download, User, MapPin, PenTool, Trash2, RefreshCw, Crop, Clock, Sparkles, Brush, Sliders, ArrowRight } from "lucide-react";
 import { useGeneratorStore, AspectRatio } from "../store/useGeneratorStore";
 import { cn } from "@/lib/utils";
 import { UpscalerModal } from "./UpscalerModal";
@@ -95,7 +95,11 @@ const AspectBox = ({ children, aspectRatioValue }: { children: React.ReactNode, 
 };
 
 export const Canvas = () => {
-  const { images, isGenerating, aspectRatio, showVariations, setPrompt, generateImages } = useGeneratorStore();
+  const { 
+    images, isGenerating, aspectRatio, showVariations, setPrompt, generateImages,
+    subjectImage, sceneImage, styleImage, subjectText, sceneText, styleText,
+    provider, agnesImageModel
+  } = useGeneratorStore();
   const [upscaleTarget, setUpscaleTarget] = useState<any>(null);
   const [isUpscaleOpen, setIsUpscaleOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
@@ -124,49 +128,156 @@ export const Canvas = () => {
 
   if (!hasAtLeastOneImage) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto bg-pictora-bg dot-grid relative flex flex-col items-center justify-center p-6 md:p-12">
-        <div className="max-w-4xl w-full flex flex-col items-center gap-12">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full aspect-[2/1] border border-white/5 rounded-3xl bg-gradient-to-br from-white/[0.03] to-transparent flex flex-col items-center justify-center shadow-2xl relative overflow-hidden group"
-          >
-             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,214,0,0.1),transparent)]" />
-             <p className="text-white/10 font-display font-bold text-4xl md:text-7xl uppercase tracking-[0.2em] select-none group-hover:text-pictora-yellow/10 transition-colors duration-700">Imagine</p>
-             <p className="text-white/20 text-xs md:text-sm font-medium tracking-[0.5em] mt-2 uppercase">Create anything you can dream</p>
-          </motion.div>
+      <div className="flex-1 min-h-0 overflow-y-auto bg-pictora-bg dot-grid relative flex flex-col justify-start p-6 md:p-10 lg:p-12">
+        <div className="max-w-6xl w-full mx-auto space-y-8 py-4 animate-in fade-in duration-500">
+          
+          {/* Bento-style Row 1 */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            
+            {/* Bento Pane 1: Giant Visual Hero (7 Columns) */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:col-span-8 border border-white/5 rounded-3xl bg-gradient-to-br from-white/[0.03] to-transparent p-8 md:p-12 flex flex-col justify-between shadow-2xl relative overflow-hidden group min-h-[320px]"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_120%,rgba(255,214,0,0.08),transparent_60%)]" />
+              
+              <div className="flex items-center gap-2 z-10 self-start">
+                <span className="w-2 h-2 rounded-full bg-pictora-yellow animate-ping" />
+                <span className="text-[9px] font-mono font-extrabold tracking-[0.25em] text-pictora-yellow/90 uppercase bg-pictora-yellow/10 border border-pictora-yellow/20 px-2 py-0.5 rounded-md">
+                  Pictora Studio Workspace
+                </span>
+              </div>
 
-          <div className="w-full space-y-6">
+              <div className="space-y-3 z-10 mt-6 lg:mt-12">
+                <h1 className="text-white font-display font-black text-4xl md:text-5xl uppercase tracking-tight leading-none">
+                  Auteur Studio
+                </h1>
+                <p className="text-white/40 text-xs md:text-sm font-medium tracking-[0.05em] max-w-lg leading-relaxed">
+                  Combine multi-dimensional reference keys, custom story scripts, and advanced generation models to draft fluid, photorealistic conceptual sequences.
+                </p>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-4 items-center z-10">
+                <div className="text-[10px] text-white/30 font-medium">
+                  Active Preset Style: <span className="text-pictora-yellow font-bold uppercase tracking-wider">{aspectRatio} Ratio</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Bento Pane 2: Session Parameters & Reference Quick-Check (4 Columns) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="lg:col-span-4 border border-white/5 rounded-3xl bg-white/[0.015] p-6 flex flex-col justify-between shadow-2xl relative"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Session Status</span>
+                  <span className="text-[9px] font-mono text-pictora-yellow bg-pictora-yellow/10 border border-pictora-yellow/20 px-1.5 py-0.2 rounded uppercase">Primed</span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-[11px] py-1">
+                    <div className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-white/40" />
+                      <span className="text-white/70">Subject Key</span>
+                    </div>
+                    {subjectImage ? (
+                      <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 px-1.5 py-0.2 rounded uppercase font-bold">Active</span>
+                    ) : (
+                      <span className="text-[8px] text-white/20 uppercase font-mono">Not Loaded</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] py-1">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-white/40" />
+                      <span className="text-white/70">Scenic Frame key</span>
+                    </div>
+                    {sceneImage ? (
+                      <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 px-1.5 py-0.2 rounded uppercase font-bold">Active</span>
+                    ) : (
+                      <span className="text-[8px] text-white/20 uppercase font-mono">Not Loaded</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] py-1">
+                    <div className="flex items-center gap-2">
+                      <PenTool className="w-3.5 h-3.5 text-white/40" />
+                      <span className="text-white/70">Artistic Style key</span>
+                    </div>
+                    {styleImage ? (
+                      <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 px-1.5 py-0.2 rounded uppercase font-bold">Active</span>
+                    ) : (
+                      <span className="text-[8px] text-white/20 uppercase font-mono">Not Loaded</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-white/5 flex flex-col gap-1.5">
+                <span className="text-[8.5px] font-mono text-white/30 uppercase tracking-wider">Active Frame Rig:</span>
+                <span className="text-[11px] text-white/60 font-bold flex items-center gap-1.5 capitalize">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  {provider === "gemini" ? `Agnes Rendering (${agnesImageModel})` : `ComfyUI Nodes (Local API)`}
+                </span>
+              </div>
+            </motion.div>
+
+          </div>
+
+          {/* Inspiration Starters Section (Row 2) */}
+          <div className="w-full space-y-4">
             <div className="flex items-center gap-4 px-2">
               <span className="w-12 h-[1px] bg-white/10" />
-              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Try these for inspiration</p>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Inspiration Spark Starters</p>
               <span className="flex-1 h-[1px] bg-white/10" />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Primary CTA */}
+            <button
+              onClick={() => {
+                setPrompt(SUGGESTED_PROMPTS[0].text);
+                generateImages();
+              }}
+              className="w-full max-w-xl mx-auto py-5 px-8 bg-gradient-to-r from-amber-500 to-pictora-yellow hover:from-amber-600 hover:to-yellow-500 text-black font-extrabold text-lg uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-black/30 active:scale-95 transition-all cursor-pointer border border-transparent"
+              aria-label="Generate your first image with a suggested prompt"
+            >
+              <Sparkles className="w-5 h-5 fill-current animate-pulse" />
+              <span>Generate Your First Image</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {SUGGESTED_PROMPTS.map((item, idx) => (
                 <motion.button
                   key={idx}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + idx * 0.1 }}
+                  transition={{ delay: 0.15 + idx * 0.08 }}
                   onClick={() => {
                     setPrompt(item.text);
                     generateImages();
                   }}
-                  className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-pictora-yellow/50 hover:bg-white/[0.05] transition-all text-left flex items-start justify-between group"
+                  className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-pictora-yellow/40 hover:bg-white/[0.04] transition-all text-left flex flex-col justify-between group min-h-[120px] cursor-pointer"
                 >
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-bold text-pictora-yellow/60 uppercase tracking-widest">{item.category}</span>
-                    <p className="text-sm text-white/50 group-hover:text-white/90 transition-colors line-clamp-1">{item.text}</p>
+                  <div className="space-y-2">
+                    <span className="text-[8px] font-bold text-pictora-yellow/70 bg-pictora-yellow/5 border border-pictora-yellow/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{item.category}</span>
+                    <p className="text-xs text-white/60 group-hover:text-white/95 transition-colors line-clamp-3 leading-relaxed">{item.text}</p>
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <RefreshCw className="w-3 h-3 text-pictora-yellow" />
+                  <div className="w-full flex justify-end mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-5 h-5 rounded-full bg-pictora-yellow/15 flex items-center justify-center">
+                      <RefreshCw className="w-2.5 h-2.5 text-pictora-yellow animate-spin-slow" />
+                    </div>
                   </div>
                 </motion.button>
               ))}
             </div>
           </div>
+
         </div>
       </div>
     );
@@ -424,12 +535,30 @@ const SkeletonLoader = () => (
     layout
     layoutId="skeleton"
     className="w-full h-full relative overflow-hidden rounded-none bg-white/5"
+    role="status"
+    aria-label="Generating image..."
   >
     {/* Spinning Glow Effect */}
     <div className="absolute inset-0 p-[1px]">
       <div className="absolute inset-[-100%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg_120deg,rgba(255,215,0,0.3)_180deg,transparent_240deg_360deg)]" />
     </div>
-    <div className="absolute inset-[1px] bg-[#111111] rounded-none flex items-center justify-center">
+    <div className="absolute inset-[1px] bg-[#111111] rounded-none flex flex-col items-center justify-center gap-4 p-6">
+      {/* Progress bar */}
+      <div className="w-full max-w-md">
+        <div className="flex justify-between text-[10px] font-mono text-white/50 mb-1">
+          <span>Rendering</span>
+          <span className="text-pictora-yellow">~3-8s</span>
+        </div>
+        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-amber-500 to-pictora-yellow rounded-full"
+            initial={{ width: "0%" }}
+            animate={{ width: ["0%", "100%", "0%"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+      </div>
+      {/* Shimmer placeholder */}
       <div className="w-full h-full bg-gradient-to-br from-[#111] via-[#1a1a1a] to-[#111] animate-pulse" />
     </div>
   </motion.div>

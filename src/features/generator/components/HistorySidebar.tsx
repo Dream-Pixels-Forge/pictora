@@ -17,6 +17,41 @@ export const HistorySidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean
     return images;
   }, [images, filter]);
 
+  const handleExportHistory = () => {
+    if (filteredImages.length === 0) {
+      toast.error("No images in history to export");
+      return;
+    }
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredImages, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `pictora-history-${filter}-${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      toast.success(`Exported ${filteredImages.length} items to JSON backup file!`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to export history file");
+    }
+  };
+
+  const handleCopyAllPrompts = () => {
+    if (filteredImages.length === 0) {
+      toast.error("No prompts to copy");
+      return;
+    }
+    try {
+      const promptsList = filteredImages.map((img, idx) => `[Image ${idx + 1}] (Ratio: ${img.aspectRatio})\nPrompt: ${img.prompt}`).join("\n\n");
+      navigator.clipboard.writeText(promptsList);
+      toast.success(`Copied prompts list of ${filteredImages.length} items to clipboard!`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to copy prompts list");
+    }
+  };
+
   const handleCopyPrompt = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -45,17 +80,39 @@ export const HistorySidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean
             <span className="font-bold text-sm tracking-tight">History</span>
           )}
         </div>
-        {!isCollapsed && (
-          <button 
-            onClick={() => setFilter(prev => prev === "all" ? "favorites" : "all")}
-            className={cn(
-              "p-1.5 rounded-lg transition-colors",
-              filter === "favorites" ? "bg-red-500/20 text-red-500" : "bg-white/5 text-white/40 hover:text-white"
-            )}
-            title={filter === "favorites" ? "Showing Favorites" : "Show Favorites"}
-          >
-            <Heart className={cn("w-3.5 h-3.5", filter === "favorites" && "fill-current")} />
-          </button>
+        
+        {!isCollapsed && images.length > 0 && (
+          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5 animate-in fade-in zoom-in-95 duration-300">
+            <button 
+              onClick={handleExportHistory}
+              className="p-1.5 rounded-lg text-white/40 hover:text-pictora-yellow hover:bg-white/5 transition-all active:scale-90 cursor-pointer"
+              title="Export History JSON Backup"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={handleCopyAllPrompts}
+              className="p-1.5 rounded-lg text-white/40 hover:text-pictora-yellow hover:bg-white/5 transition-all active:scale-95 cursor-pointer"
+              title="Copy All Prompts Text"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <span className="w-[1px] h-3.5 bg-white/10 mx-0.5" />
+            <button 
+              onClick={() => setFilter(prev => prev === "all" ? "favorites" : "all")}
+              className={cn(
+                "p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer",
+                filter === "favorites" ? "bg-red-500/25 text-red-500 hover:bg-red-500/35" : "text-white/40 hover:text-white hover:bg-white/5"
+              )}
+              title={filter === "favorites" ? "Showing Favorites Only" : "Filter by Favorites"}
+            >
+              <Heart className={cn("w-3.5 h-3.5", filter === "favorites" && "fill-current")} />
+            </button>
+          </div>
+        )}
+
+        {!isCollapsed && images.length === 0 && (
+          <div className="text-[10px] text-white/20 select-none">Empty</div>
         )}
       </div>
 
