@@ -222,7 +222,7 @@ export const Canvas = () => {
                 <span className="text-[8.5px] font-mono text-white/30 uppercase tracking-wider">Active Frame Rig:</span>
                 <span className="text-[11px] text-white/60 font-bold flex items-center gap-1.5 capitalize">
                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  {provider === "gemini" ? `Agnes Rendering (${agnesImageModel})` : `ComfyUI Nodes (Local API)`}
+                  {provider === "agnes" ? `Agnes Rendering (${agnesImageModel})` : `ComfyUI Nodes (Local API)`}
                 </span>
               </div>
             </motion.div>

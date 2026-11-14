@@ -290,8 +290,8 @@ const StylePicker = ({
   );
 };
 
-const QuotaIndicator = ({ provider, agnesApiKey, recentGenerations }: { 
-  provider: "gemini" | "comfyui" | "agnes";
+const QuotaIndicator = ({ provider, agnesApiKey, recentGenerations }: {
+  provider: "comfyui" | "agnes";
   agnesApiKey: string;
   recentGenerations: number[];
 }) => {
@@ -343,13 +343,13 @@ const QuotaIndicator = ({ provider, agnesApiKey, recentGenerations }: {
   );
 };
 
-const AdvancedSettings = ({ 
+const AdvancedSettings = ({
   provider, setProvider,
   comfyUiUrl, setComfyUiUrl,
   agnesApiUrl, setAgnesApiUrl,
   agnesApiKey, setAgnesApiKey,
   agnesImageModel, setAgnesImageModel,
-  geminiModel, setGeminiModel,
+  agnesTextModel, setAgnesTextModel,
   comfyUiCheckpoint, setComfyUiCheckpoint,
   comfyUiSteps, setComfyUiSteps,
   comfyUiCfg, setComfyUiCfg,
@@ -360,13 +360,13 @@ const AdvancedSettings = ({
   clearImages,
   images,
 }: {
-  provider: "gemini" | "comfyui" | "agnes";
-  setProvider: (p: "gemini" | "comfyui" | "agnes") => void;
+  provider: "comfyui" | "agnes";
+  setProvider: (p: "comfyui" | "agnes") => void;
   comfyUiUrl: string; setComfyUiUrl: (v: string) => void;
   agnesApiUrl: string; setAgnesApiUrl: (v: string) => void;
   agnesApiKey: string; setAgnesApiKey: (v: string) => void;
   agnesImageModel: string; setAgnesImageModel: (v: string) => void;
-  geminiModel: string; setGeminiModel: (v: string) => void;
+  agnesTextModel: string; setAgnesTextModel: (v: string) => void;
   comfyUiCheckpoint: string; setComfyUiCheckpoint: (v: string) => void;
   comfyUiSteps: number; setComfyUiSteps: (v: number) => void;
   comfyUiCfg: number; setComfyUiCfg: (v: number) => void;
@@ -423,18 +423,9 @@ const AdvancedSettings = ({
             
             <div className="space-y-6">
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Model Provider</span>
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">AI Provider</span>
                 <div className="flex gap-2">
-                  <button 
-                    onClick={() => setProvider('gemini')}
-                    className={cn(
-                      "flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all border",
-                      provider === 'gemini' ? "bg-pictora-yellow border-transparent text-black" : "bg-[#222] border-white/10 text-white/60"
-                    )}
-                  >
-                    Gemini
-                  </button>
-                  <button 
+                  <button
                     onClick={() => setProvider('comfyui')}
                     className={cn(
                       "flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all border",
@@ -443,7 +434,7 @@ const AdvancedSettings = ({
                   >
                     ComfyUI
                   </button>
-                  <button 
+                  <button
                     onClick={() => setProvider('agnes')}
                     className={cn(
                       "flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all border",
@@ -459,13 +450,13 @@ const AdvancedSettings = ({
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Text Model (Chat / Prompt Craft)</span>
-                    <select 
-                      value={AGNES_TEXT_MODELS.some(m => m.value === geminiModel) ? geminiModel : "custom"}
+                    <select
+                      value={AGNES_TEXT_MODELS.some(m => m.value === agnesTextModel) ? agnesTextModel : "custom"}
                       onChange={(e) => {
                         if (e.target.value !== "custom") {
-                          setGeminiModel(e.target.value);
+                          setAgnesTextModel(e.target.value);
                         } else {
-                          setGeminiModel("");
+                          setAgnesTextModel("");
                         }
                       }}
                       className="w-full px-3 py-2 bg-[#222] border border-white/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pictora-yellow/50 text-white"
@@ -476,11 +467,11 @@ const AdvancedSettings = ({
                       <option value="custom">Custom ID...</option>
                      </select>
 
-                    {(geminiModel === "" || !AGNES_TEXT_MODELS.some(m => m.value === geminiModel)) && (
-                      <input 
+                    {(agnesTextModel === "" || !AGNES_TEXT_MODELS.some(m => m.value === agnesTextModel)) && (
+                      <input
                         type="text"
-                        value={geminiModel}
-                        onChange={(e) => setGeminiModel(e.target.value)}
+                        value={agnesTextModel}
+                        onChange={(e) => setAgnesTextModel(e.target.value)}
                         className="w-full px-3 py-2 bg-[#222] border border-white/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pictora-yellow/50 mt-2"
                         placeholder="Enter custom text model ID (e.g. agnes-3.0-flash)"
                       />
@@ -506,12 +497,41 @@ const AdvancedSettings = ({
                      </select>
 
                     {(agnesImageModel === "" || !AGNES_MODELS.some(m => m.value === agnesImageModel)) && (
-                      <input 
+                      <input
                         type="text"
                         value={agnesImageModel}
                         onChange={(e) => setAgnesImageModel(e.target.value)}
                         className="w-full px-3 py-2 bg-[#222] border border-white/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pictora-yellow/50 mt-2"
                         placeholder="Enter custom image model ID (e.g. agnes-image-2.5-flash)"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Text Model</span>
+                    <select
+                      value={AGNES_TEXT_MODELS.some(m => m.value === agnesTextModel) ? agnesTextModel : "custom"}
+                      onChange={(e) => {
+                        if (e.target.value !== "custom") {
+                          setAgnesTextModel(e.target.value);
+                        } else {
+                          setAgnesTextModel("");
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-[#222] border border-white/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pictora-yellow/50 text-white"
+                    >
+                      {AGNES_TEXT_MODELS.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                      <option value="custom">Custom ID...</option>
+                     </select>
+
+                    {(agnesTextModel === "" || !AGNES_TEXT_MODELS.some(m => m.value === agnesTextModel)) && (
+                      <input
+                        type="text"
+                        value={agnesTextModel}
+                        onChange={(e) => setAgnesTextModel(e.target.value)}
+                        className="w-full px-3 py-2 bg-[#222] border border-white/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pictora-yellow/50 mt-2"
+                        placeholder="Enter custom text model ID (e.g. agnes-3.0-flash)"
                       />
                     )}
                   </div>
@@ -944,7 +964,7 @@ export const PromptBar = () => {
     agnesApiUrl, setAgnesApiUrl,
     agnesApiKey, setAgnesApiKey,
     agnesImageModel, setAgnesImageModel,
-    geminiModel, setGeminiModel,
+    agnesTextModel, setAgnesTextModel,
     recentGenerations
   } = useGeneratorStore();
   
@@ -957,11 +977,11 @@ export const PromptBar = () => {
     if (!prompt.trim() || isPromptActing) return;
     setIsPromptActing(true);
     try {
-      const { agnesApiKey, geminiModel } = useGeneratorStore.getState();
+      const { agnesApiKey, agnesTextModel } = useGeneratorStore.getState();
       const data = await agnesFetch(
         "/chat/completions",
         {
-          model: geminiModel,
+          model: agnesTextModel,
           messages: [
             {
               role: "user",
@@ -1249,7 +1269,7 @@ export const PromptBar = () => {
                 agnesApiUrl={agnesApiUrl} setAgnesApiUrl={setAgnesApiUrl}
                 agnesApiKey={agnesApiKey} setAgnesApiKey={setAgnesApiKey}
                 agnesImageModel={agnesImageModel} setAgnesImageModel={setAgnesImageModel}
-                geminiModel={geminiModel} setGeminiModel={setGeminiModel}
+                agnesTextModel={agnesTextModel} setAgnesTextModel={setAgnesTextModel}
                 comfyUiCheckpoint={comfyUiCheckpoint} setComfyUiCheckpoint={setComfyUiCheckpoint}
                 comfyUiSteps={comfyUiSteps} setComfyUiSteps={setComfyUiSteps}
                 comfyUiCfg={comfyUiCfg} setComfyUiCfg={setComfyUiCfg}

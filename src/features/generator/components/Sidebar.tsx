@@ -70,7 +70,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
       return;
     }
     setIsDrafting(true);
-    const toastId = toast.loading("Gemini AI is crafting sequential screenplay scenes...");
+    const toastId = toast.loading("Agnes AI is crafting sequential screenplay scenes...");
     try {
       await generateStoryboardOutline(concept);
       setShowDraftModal(false);
@@ -345,7 +345,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                     type="button"
                     onClick={() => setShowDraftModal(true)}
                     className="px-2 py-1.5 bg-gradient-to-r from-amber-500 to-pictora-yellow text-black text-[9px] font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow active:scale-95 transition-all"
-                    title="Generate custom sequential draft with Gemini"
+                    title="Generate custom sequential draft with Agnes AI"
                   >
                     <BrainCircuit className="w-3.5 h-3.5 shrink-0" />
                     <span>AI Draft</span>
@@ -445,7 +445,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                   type="button"
                   onClick={() => setShowDraftModal(true)}
                   className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-pictora-yellow flex items-center justify-center text-black shadow active:scale-90 transition-all cursor-pointer"
-                  title="AI Draft Storyboard with Gemini"
+                  title="AI Draft Storyboard with Agnes"
                 >
                   <BrainCircuit className="w-4 h-4" />
                 </button>
@@ -578,7 +578,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
               AI Storyboard Designer
             </h3>
             <p className="text-[10px] text-white/40 mt-1 leading-relaxed">
-              Describe your project concept or film summary. Gemini AI will automatically generate 4 sequential screenplay rounds with detailed descriptive prompt cues and action scripts.
+              Describe your project concept or film summary. Agnes AI will automatically generate 4 sequential screenplay rounds with detailed descriptive prompt cues and action scripts.
             </p>
 
             <form onSubmit={handleCreateOutline} className="mt-3.5 space-y-3">

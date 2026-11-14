@@ -272,7 +272,7 @@ export const ImageEditorModal: React.FC<ImageEditorModalProps> = ({ image, isOpe
     setScale(nextScale);
   };
 
-  // Run Gemini/AI generative request with Prompt guidance
+  // Run Agnes AI generative request with Prompt guidance
   const handleExecuteAiEdit = async () => {
     if (!editPrompt.trim()) {
       toast.error("Please provide an edit prompt instruction.");

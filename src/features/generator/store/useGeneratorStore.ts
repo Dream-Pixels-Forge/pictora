@@ -44,7 +44,7 @@ export async function agnesFetch<T = any>(
 }
 
 /**
- * Map Agnes API errors into user-friendly messages (replaces parseGeminiError).
+ * Map Agnes API errors into user-friendly messages.
  */
 export function parseAgnesError(error: any): string {
   if (!error) return "An unexpected empty error was encountered.";
@@ -161,7 +161,7 @@ export interface StoryboardScene {
 }
 
 export type AspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "16:10" | "2:3" | "3:2" | "4:5";
-export type Provider = "gemini" | "comfyui" | "agnes";
+export type Provider = "comfyui" | "agnes";
 
 interface GeneratorState {
   prompt: string;
@@ -177,11 +177,10 @@ interface GeneratorState {
   showVariations: boolean;
   provider: Provider;
   comfyUiUrl: string;
-  geminiApiKey: string;
   agnesApiUrl: string;
   agnesApiKey: string;
   agnesImageModel: string;
-  geminiModel: string;
+  agnesTextModel: string;
   recentGenerations: number[];
 
   // Storyboard Mode State
@@ -189,8 +188,8 @@ interface GeneratorState {
   storyboardScenes: StoryboardScene[];
   activeSceneId: string | null;
   storyboardStyle: "realistic" | "drawing";
-  ttsEngine: "browser" | "gemini";
-  geminiVoice: string;
+  ttsEngine: "browser" | "agnes";
+  agnesVoice: string;
   
   // Custom Project Groupings
   projects: StoryboardProject[];
@@ -214,11 +213,10 @@ interface GeneratorState {
   setStyleText: (text: string) => void;
   setProvider: (provider: Provider) => void;
   setComfyUiUrl: (url: string) => void;
-  setGeminiApiKey: (key: string) => void;
   setAgnesApiUrl: (url: string) => void;
   setAgnesApiKey: (key: string) => void;
   setAgnesImageModel: (model: string) => void;
-  setGeminiModel: (model: string) => void;
+  setAgnesTextModel: (model: string) => void;
   toggleShowVariations: () => void;
   generateImages: () => Promise<void>;
   randomizePrompt: () => Promise<void>;
@@ -238,9 +236,9 @@ interface GeneratorState {
   deleteStoryboardScene: (id: string) => void;
   generateStoryboardOutline: (concept: string) => Promise<void>;
   generateStoryboardSceneImage: (sceneId: string) => Promise<void>;
-  setTtsEngine: (engine: "browser" | "gemini") => void;
-  setGeminiVoice: (voice: string) => void;
-  generateGeminiTTS: (text: string) => Promise<string>;
+  setTtsEngine: (engine: "browser" | "agnes") => void;
+  setAgnesVoice: (voice: string) => void;
+  generateAgnesTTS: (text: string) => Promise<string>;
 
   // Project Actions
   ensureProjects: () => void;
@@ -277,13 +275,12 @@ export const useGeneratorStore = create<GeneratorState>()(
       sceneText: '',
       styleText: '',
       showVariations: true,
-      provider: 'gemini',
+      provider: 'agnes',
       comfyUiUrl: 'http://127.0.0.1:8188',
-      geminiApiKey: '',
       agnesApiUrl: 'https://apihub.agnes-ai.com/v1',
       agnesApiKey: '',
       agnesImageModel: 'agnes-image-2.5-flash',
-      geminiModel: 'agnes-3.0-flash',
+      agnesTextModel: 'agnes-3.0-flash',
       recentGenerations: [],
 
       // Storyboard initial state
@@ -292,7 +289,7 @@ export const useGeneratorStore = create<GeneratorState>()(
       activeSceneId: null,
       storyboardStyle: 'realistic',
       ttsEngine: 'browser',
-      geminiVoice: 'Kore',
+      agnesVoice: 'Kore',
       projects: [],
       activeProjectId: null,
       
@@ -318,14 +315,13 @@ export const useGeneratorStore = create<GeneratorState>()(
       setStyleText: (styleText) => set({ styleText }),
       setProvider: (provider) => set({ provider }),
       setComfyUiUrl: (comfyUiUrl) => set({ comfyUiUrl }),
-      setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey }),
       setAgnesApiUrl: (agnesApiUrl) => set({ agnesApiUrl }),
       setAgnesApiKey: (agnesApiKey) => set({ agnesApiKey }),
       setAgnesImageModel: (agnesImageModel) => set({ agnesImageModel }),
-      setGeminiModel: (geminiModel) => set({ geminiModel }),
+      setAgnesTextModel: (agnesTextModel) => set({ agnesTextModel }),
       setTtsEngine: (ttsEngine) => set({ ttsEngine }),
-      setGeminiVoice: (geminiVoice) => set({ geminiVoice }),
-      generateGeminiTTS: async (text: string) => {
+      setAgnesVoice: (agnesVoice) => set({ agnesVoice }),
+      generateAgnesTTS: async (text: string) => {
         // Agnes AI Hub does not expose a TTS endpoint per the API spec.
         // Fall back to browser SpeechSynthesis for voiceover.
         if (typeof window === "undefined" || !window.speechSynthesis) {
@@ -514,13 +510,13 @@ export const useGeneratorStore = create<GeneratorState>()(
       setComfyUiDenoise: (comfyUiDenoise) => set({ comfyUiDenoise }),
 
       randomizePrompt: async () => {
-        const { agnesApiKey, agnesApiUrl, geminiModel } = get();
+        const { agnesApiKey, agnesApiUrl, agnesTextModel } = get();
         try {
           const agnesBaseUrl = agnesApiUrl.replace(/\/+$/, "");
           const data = await agnesFetch(
             "/chat/completions",
             {
-              model: geminiModel,
+              model: agnesTextModel,
               messages: [
                 {
                   role: "user",
@@ -541,7 +537,7 @@ export const useGeneratorStore = create<GeneratorState>()(
       },
 
       describeImage: async (imageUrl: string) => {
-        const { agnesApiKey, agnesApiUrl, geminiModel } = get();
+        const { agnesApiKey, agnesApiUrl, agnesTextModel } = get();
         try {
           let base64Data = imageUrl;
           let mimeType = 'image/png';
@@ -556,7 +552,7 @@ export const useGeneratorStore = create<GeneratorState>()(
           const data = await agnesFetch(
             "/chat/completions",
             {
-              model: geminiModel,
+              model: agnesTextModel,
               messages: [
                 {
                   role: "user",
@@ -580,9 +576,9 @@ export const useGeneratorStore = create<GeneratorState>()(
       },
 
       generateImages: async () => {
-        const { 
-          prompt, images, aspectRatio, subjectImage, sceneImage, styleImage, subjectText, sceneText, styleText, provider, comfyUiUrl, 
-          geminiApiKey, agnesApiUrl, agnesApiKey, agnesImageModel, geminiModel, comfyUiCheckpoint, comfyUiSteps, comfyUiCfg, comfyUiSampler, comfyUiScheduler, comfyUiDenoise 
+        const {
+          prompt, images, aspectRatio, subjectImage, sceneImage, styleImage, subjectText, sceneText, styleText, provider, comfyUiUrl,
+          agnesApiKey, agnesApiUrl, agnesImageModel, agnesTextModel, comfyUiCheckpoint, comfyUiSteps, comfyUiCfg, comfyUiSampler, comfyUiScheduler, comfyUiDenoise
         } = get();
         if (!prompt.trim()) {
           toast.error("Please enter a prompt first!");
@@ -812,7 +808,7 @@ export const useGeneratorStore = create<GeneratorState>()(
       },
 
       generateStoryboardOutline: async (concept: string) => {
-        const { agnesApiKey, agnesApiUrl, geminiModel, storyboardStyle } = get();
+        const { agnesApiKey, agnesApiUrl, agnesTextModel, storyboardStyle } = get();
         try {
           const agnesBaseUrl = agnesApiUrl.replace(/\/+$/, "");
           const stylePromptDesc = storyboardStyle === 'drawing'
@@ -822,7 +818,7 @@ export const useGeneratorStore = create<GeneratorState>()(
           const data = await agnesFetch(
             "/chat/completions",
             {
-              model: geminiModel,
+              model: agnesTextModel,
               messages: [
                 {
                   role: "user",
@@ -1174,11 +1170,10 @@ Return ONLY raw JSON. No markdown backticks, no comments, no intro or outro text
       storage: createJSONStorage(() => storage),
       partialize: (state) => ({
         images: state.images,
-        geminiApiKey: state.geminiApiKey,
         agnesApiKey: state.agnesApiKey,
         agnesApiUrl: state.agnesApiUrl,
         agnesImageModel: state.agnesImageModel,
-        geminiModel: state.geminiModel,
+        agnesTextModel: state.agnesTextModel,
         provider: state.provider,
         comfyUiUrl: state.comfyUiUrl,
         aspectRatio: state.aspectRatio,
@@ -1192,7 +1187,7 @@ Return ONLY raw JSON. No markdown backticks, no comments, no intro or outro text
         storyboardScenes: state.storyboardScenes,
         activeSceneId: state.activeSceneId,
         ttsEngine: state.ttsEngine,
-        geminiVoice: state.geminiVoice,
+        agnesVoice: state.agnesVoice,
         projects: state.projects,
         activeProjectId: state.activeProjectId,
       }),

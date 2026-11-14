@@ -339,9 +339,9 @@ export const StoryboardWorkspace = () => {
     styleText,
     ttsEngine,
     setTtsEngine,
-    geminiVoice,
-    setGeminiVoice,
-    generateGeminiTTS,
+    agnesVoice,
+    setAgnesVoice,
+    generateAgnesTTS,
     
     // Custom project integrations
     projects,
@@ -441,7 +441,7 @@ export const StoryboardWorkspace = () => {
   const [speechRate, setSpeechRate] = useState<number>(1.05);
   const [isSpeechSpeaking, setIsSpeechSpeaking] = useState<boolean>(false);
   const [isTtsGenerating, setIsTtsGenerating] = useState<boolean>(false);
-  const currentGeminiAudioRef = useRef<{ source: AudioBufferSourceNode; audioCtx: AudioContext } | null>(null);
+  const currentAgnesAudioRef = useRef<{ source: AudioBufferSourceNode; audioCtx: AudioContext } | null>(null);
 
   const playPcmAudio = useCallback((base64Data: string, sampleRate = 24000, onEndCallback?: () => void) => {
     const binaryString = atob(base64Data);
@@ -480,12 +480,12 @@ export const StoryboardWorkspace = () => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
-    if (currentGeminiAudioRef.current) {
+    if (currentAgnesAudioRef.current) {
       try {
-        currentGeminiAudioRef.current.source.stop();
-        currentGeminiAudioRef.current.audioCtx.close();
+        currentAgnesAudioRef.current.source.stop();
+        currentAgnesAudioRef.current.audioCtx.close();
       } catch (e) {}
-      currentGeminiAudioRef.current = null;
+      currentAgnesAudioRef.current = null;
     }
   }, []);
 
@@ -497,25 +497,25 @@ export const StoryboardWorkspace = () => {
       return;
     }
 
-    if (ttsEngine === "gemini") {
+    if (ttsEngine === "agnes") {
       setIsTtsGenerating(true);
       try {
-        const base64Data = await generateGeminiTTS(text);
+        const base64Data = await generateAgnesTTS(text);
         setIsTtsGenerating(false);
         setIsSpeechSpeaking(true);
-        
+
         const audioUnit = playPcmAudio(base64Data, 24000, () => {
           setIsSpeechSpeaking(false);
-          currentGeminiAudioRef.current = null;
+          currentAgnesAudioRef.current = null;
           if (onEndCallback) onEndCallback();
         });
-        currentGeminiAudioRef.current = audioUnit;
+        currentAgnesAudioRef.current = audioUnit;
       } catch (err: any) {
-        console.error("Gemini TTS engine failed:", err);
+        console.error("Agnes TTS engine failed:", err);
         setIsTtsGenerating(false);
         setIsSpeechSpeaking(false);
-        toast.error("Gemini premium TTS failed, falling back to local local voice.");
-        
+        toast.error("Agnes premium TTS failed, falling back to local voice.");
+
         // Fallback to browser standard
         setIsSpeechSpeaking(true);
         speakNarrationSafely(text, selectedVoiceName, availableVoices, () => {
@@ -530,7 +530,7 @@ export const StoryboardWorkspace = () => {
         if (onEndCallback) onEndCallback();
       }, speechRate);
     }
-  }, [ttsEngine, generateGeminiTTS, selectedVoiceName, availableVoices, speechRate, stopActiveSpeech, playPcmAudio]);
+  }, [ttsEngine, generateAgnesTTS, selectedVoiceName, availableVoices, speechRate, stopActiveSpeech, playPcmAudio]);
 
   const activeScene = useMemo(() => {
     return storyboardScenes.find(s => s.id === activeSceneId) || storyboardScenes[0];
@@ -579,7 +579,7 @@ export const StoryboardWorkspace = () => {
       return;
     }
     setIsDrafting(true);
-    const toastId = toast.loading("Gemini AI is crafting sequential screenplay scenes...");
+    const toastId = toast.loading("Agnes AI is crafting sequential screenplay scenes...");
     try {
       await generateStoryboardOutline(concept);
       setShowDraftModal(false);
@@ -1315,13 +1315,13 @@ export const StoryboardWorkspace = () => {
                           ))}
                         </select>
                       </div>
-                      {ttsEngine === "gemini" && (
+                      {ttsEngine === "agnes" && (
                         <div className="space-y-1.5">
-                          <span className="text-[8.5px] font-extrabold text-white/35 uppercase tracking-wider">Gemini Premium AI Voice</span>
+                          <span className="text-[8.5px] font-extrabold text-white/35 uppercase tracking-wider">Agnes Premium AI Voice</span>
                           <div className="relative">
                             <select
-                              value={geminiVoice}
-                              onChange={(e) => setGeminiVoice(e.target.value)}
+                              value={agnesVoice}
+                              onChange={(e) => setAgnesVoice(e.target.value)}
                               className="w-full bg-[#0E0E10] border border-white/5 text-[10px] text-white/80 rounded-xl px-3 py-2 pr-8 outline-none focus:border-pictora-yellow transition-all appearance-none cursor-pointer"
                             >
                               <option value="Kore">Kore (Soothing Female)</option>
@@ -1370,15 +1370,15 @@ export const StoryboardWorkspace = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setTtsEngine("gemini")}
+                            onClick={() => setTtsEngine("agnes")}
                             className={cn(
                               "py-1 rounded-lg text-[9.5px] font-extrabold uppercase transition-all cursor-pointer text-center",
-                              ttsEngine === "gemini"
+                              ttsEngine === "agnes"
                                 ? "bg-[#FFD600]/15 text-[#FFD600] border border-[#FFD600]/25"
                                 : "text-white/40 hover:text-white/75 border border-transparent"
                             )}
                           >
-                            ✨ Gemini AI
+                            ✨ Agnes AI
                           </button>
                         </div>
                       </div>
@@ -1540,7 +1540,7 @@ export const StoryboardWorkspace = () => {
             </div>
             <h3 className="text-xl font-extrabold text-white tracking-tight mb-2">Initiate Your Storyboard Concept</h3>
             <p className="text-white/50 mt-1 max-w-[380px] leading-relaxed">
-              Create complete sequential scripts and generate scene frames in rounds. Start by drafting with Gemini AI or add frames manually.
+              Create complete sequential scripts and generate scene frames in rounds. Start by drafting with Agnes AI or add frames manually.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8 w-full max-w-md">
               <button
@@ -1575,7 +1575,7 @@ export const StoryboardWorkspace = () => {
               AI Storyboard Designer
             </h3>
             <p className="text-[11px] text-white/40 mt-1 leading-relaxed">
-              Describe your project concept or film summary. Gemini AI will automatically generate 4 sequential screenplay rounds with detailed descriptive prompt cues and action scripts.
+              Describe your project concept or film summary. Agnes AI will automatically generate 4 sequential screenplay rounds with detailed descriptive prompt cues and action scripts.
             </p>
 
             <form onSubmit={handleCreateOutline} className="mt-4 space-y-4">
@@ -2147,27 +2147,27 @@ export const StoryboardWorkspace = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setTtsEngine("gemini")}
+                            onClick={() => setTtsEngine("agnes")}
                             className={cn(
                               "py-1 rounded-lg text-[9.5px] font-extrabold uppercase transition-all cursor-pointer text-center",
-                              ttsEngine === "gemini"
+                              ttsEngine === "agnes"
                                 ? "bg-[#FFD600]/15 text-[#FFD600] border border-[#FFD600]/25"
                                 : "text-white/40 hover:text-white/75 border border-transparent"
                             )}
                           >
-                            ✨ Gemini AI
+                            ✨ Agnes AI
                           </button>
                         </div>
                       </div>
 
                       {/* Engine Selection Option */}
-                      {ttsEngine === "gemini" ? (
+                      {ttsEngine === "agnes" ? (
                         <div className="space-y-1.5">
-                          <span className="text-[8.5px] font-extrabold text-white/35 uppercase tracking-wider">Gemini Premium AI Voice</span>
+                          <span className="text-[8.5px] font-extrabold text-white/35 uppercase tracking-wider">Agnes Premium AI Voice</span>
                           <div className="relative">
                             <select
-                              value={geminiVoice}
-                              onChange={(e) => setGeminiVoice(e.target.value)}
+                              value={agnesVoice}
+                              onChange={(e) => setAgnesVoice(e.target.value)}
                               className="w-full bg-[#0E0E10] border border-white/5 text-[10px] text-white/80 rounded-xl px-3 py-2 pr-8 outline-none focus:border-pictora-yellow transition-all appearance-none cursor-pointer"
                             >
                               <option value="Kore">Kore (Soothing Female)</option>
