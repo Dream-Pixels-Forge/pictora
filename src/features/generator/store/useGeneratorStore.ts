@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { toast } from 'sonner';
 import { get, set as idbSet, del } from 'idb-keyval';
+import type { Mode } from '@/stores';
 
 // Agnes AI Hub — OpenAI-compatible API gateway
 const AGNES_BASE_URL = 'https://apihub.agnes-ai.com/v1';
@@ -184,7 +185,7 @@ interface GeneratorState {
   recentGenerations: number[];
 
   // Storyboard Mode State
-  viewMode: "canvas" | "storyboard";
+  viewMode: Mode;
   storyboardScenes: StoryboardScene[];
   activeSceneId: string | null;
   storyboardStyle: "realistic" | "drawing";
@@ -227,7 +228,7 @@ interface GeneratorState {
   toggleFavorite: (id: string) => void;
 
   // Storyboard Actions
-  setViewMode: (mode: "canvas" | "storyboard") => void;
+  setViewMode: (mode: Mode) => void;
   setStoryboardScenes: (scenes: StoryboardScene[]) => void;
   setActiveSceneId: (id: string | null) => void;
   setStoryboardStyle: (style: "realistic" | "drawing") => void;
@@ -284,7 +285,7 @@ export const useGeneratorStore = create<GeneratorState>()(
       recentGenerations: [],
 
       // Storyboard initial state
-      viewMode: 'canvas',
+      viewMode: 'storyboard',
       storyboardScenes: [],
       activeSceneId: null,
       storyboardStyle: 'realistic',

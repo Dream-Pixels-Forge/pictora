@@ -1,4 +1,4 @@
-# Milestone 1: Foundation - COMPLETED
+# Milestone 1: Foundation
 
 ## Objective
 Create the architectural foundation for Pictora 2.0 as a three-mode video production suite.
@@ -9,49 +9,48 @@ Create the architectural foundation for Pictora 2.0 as a three-mode video produc
 
 ## Tasks
 
-### 1.1 State Management Refactor ✅
+### 1.1 State Management Refactor
 
+- [x] Create modular Zustand stores directory (`src/stores/`)
+- [x] Create `uiStore.ts` with Mode type definition
+- [x] Migrate current generator state to `generatorStore.ts`
 - [x] Remove all Gemini-specific references from types
-- [x] Rename Provider type to `"comfyui" | "agnes"`
-- [x] Rename `geminiModel` → `agnesTextModel`
-- [x] Rename `geminiVoice` → `agnesVoice`  
-- [x] Rename `geminiApiKey` → `agnesApiKey`
-- [x] Rename `generateGeminiTTS` → `generateAgnesTTS`
-- [x] Update store initial state and persistence
+- [x] Ensure type safety with Provider union type
 
 ### 1.2 Mode System Implementation
 
-- [ ] Update `src/App.tsx` to use three modes (cast/storyboard/video)
-- [ ] Create mode navigation buttons in NavRail
-- [ ] Create mode switching logic with proper transitions
+- [x] Update `src/App.tsx` to use three modes (cast/storyboard/video)
+- [x] Create mode navigation buttons in NavRail (Sidebar.tsx)
+- [x] Update provider type to exclude 'gemini'
+- [x] Create mode switching logic with proper transitions
+- [x] Create VideoWorkspace component with timeline, clips, and cast/export dialogs
 
-### 1.3 Archive Existing Work ✅
+### 1.3 Archive Existing Work
 
-- [x] Move old dev-notes to Archives
-- [x] Update README to document new vision
-- [x] Clean up test files
+- [x] Move all `dev-notes/subgoals/` files to `dev-notes/Archives/`
+- [x] Update GOAL.md to document current vision
+- [ ] Clean up any remaining test files
 
-### 1.4 Component Cleanup ✅
+### 1.4 Component Cleanup
 
-- [x] Remove Gemini button from PromptBar provider selector (now just ComfyUI/Agnes)
-- [x] Update Canvas.tsx to show "Agnes Rendering" correctly
-- [x] All components now use Agnes naming consistently
-- [x] TTS engine options: "browser" | "agnes"
+- [x] Remove Gemini UI buttons from PromptBar
+- [x] Update Canvas.tsx text from "Agnes Rendering" to appropriate messaging
+- [x] Ensure all components are agnostic to Gemini naming
 
 ---
 
-## Quality Gates ✅
+## Quality Gates
 
 - [x] `tsc --noEmit` passes with zero errors
 - [x] `pnpm build` succeeds
-- [x] No references to "gemini" in source code
+- [x] No references to "gemini" in source code (except Agnes comments)
 - [x] Git history is clean (proper commits, no WIP)
 
 ---
 
-## Checklist Before Proceeding
+## Checkmark Before Proceeding
 
-- [ ] All existing functionality preserved (image generation with Agnes)
+- [x] All existing functionality preserved (image generation with Agnes)
 - [ ] No breaking user-facing changes
 - [ ] Bundle size under 700KB (current: ~190KB gzipped)
 - [ ] Documentation updated

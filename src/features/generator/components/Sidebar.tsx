@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Plus, Dice5, Menu, Settings, LogOut, Sparkles, RefreshCw, Film, BrainCircuit, Clapperboard, Download, Clock, ArrowRight, Image, X, User, Trash2 } from "lucide-react";
+import { Plus, Dice5, Menu, Settings, LogOut, Sparkles, RefreshCw, Film, BrainCircuit, Clapperboard, Download, Clock, ArrowRight, Image, X, User, Trash2, Palette, Layers, Users } from "lucide-react";
 import { useGeneratorStore } from "../store/useGeneratorStore";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
@@ -22,7 +22,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<"references" | "deck">("deck");
+  const [sidebarTab, setSidebarTab] = useState<"references" | "deck" | "timeline" | "cast" | "export">("deck");
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
 
@@ -54,6 +54,8 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
   React.useEffect(() => {
     if (viewMode === "storyboard") {
       setSidebarTab("deck");
+    } else if (viewMode === "video") {
+      setSidebarTab("timeline");
     } else {
       setSidebarTab("references");
     }
@@ -185,23 +187,23 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
         )}
       </div>
 
-      {/* Mode Select Header */}
+      {/* Mode Select Header - Three Mode Navigation */}
       {!isCollapsed ? (
         <div className="mb-4 p-1 bg-black/45 rounded-xl border border-white/5 flex gap-1 shrink-0">
           <button
             type="button"
-            onClick={() => setViewMode("canvas")}
+            onClick={() => setViewMode("cast")}
             className={cn(
               "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer",
-              viewMode === "canvas"
+              viewMode === "cast"
                 ? "bg-gradient-to-r from-amber-500 to-pictora-yellow text-black shadow-lg"
                 : "text-white/60 hover:text-white hover:bg-white/[0.02]"
             )}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Canvas</span>
+            <Palette className="w-3.5 h-3.5" />
+            <span>Cast</span>
           </button>
-          
+
           <button
             type="button"
             onClick={() => setViewMode("storyboard")}
@@ -215,19 +217,33 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
             <Film className="w-3.5 h-3.5" />
             <span>Storyboard</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("video")}
+            className={cn(
+              "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer",
+              viewMode === "video"
+                ? "bg-gradient-to-r from-amber-500 to-pictora-yellow text-black shadow-lg"
+                : "text-white/60 hover:text-white hover:bg-white/[0.02]"
+            )}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Video</span>
+          </button>
         </div>
       ) : (
         <div className="mb-4 flex flex-col gap-2 items-center shrink-0">
           <button
             type="button"
-            onClick={() => setViewMode("canvas")}
+            onClick={() => setViewMode("cast")}
             className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer",
-              viewMode === "canvas" ? "bg-pictora-yellow text-black shadow" : "text-white/40 hover:text-white hover:bg-white/5"
+              viewMode === "cast" ? "bg-pictora-yellow text-black shadow" : "text-white/40 hover:text-white hover:bg-white/5"
             )}
-            title="Canvas Mode"
+            title="Cast Mode - Pre-production & Idea Generation"
           >
-            <Sparkles className="w-4 h-4" />
+            <Palette className="w-4 h-4" />
           </button>
           <button
             type="button"
@@ -236,9 +252,20 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
               "w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer",
               viewMode === "storyboard" ? "bg-pictora-yellow text-black shadow" : "text-white/40 hover:text-white hover:bg-white/5"
             )}
-            title="Storyboard Mode"
+            title="Storyboard Mode - Visual Direction"
           >
             <Film className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("video")}
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer",
+              viewMode === "video" ? "bg-pictora-yellow text-black shadow" : "text-white/40 hover:text-white hover:bg-white/5"
+            )}
+            title="Video Mode - Timeline & Post-production"
+          >
+            <Layers className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -300,11 +327,91 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
         </div>
       )}
 
+      {/* Video Mode Tabs */}
+      {!isCollapsed && viewMode === "video" && (
+        <div className="mb-4 flex border-b border-white/5 text-[10px] font-bold uppercase tracking-wider select-none shrink-0">
+          <button
+            type="button"
+            onClick={() => setSidebarTab("timeline")}
+            className={cn(
+              "flex-1 pb-2 border-b-2 transition-all cursor-pointer text-center",
+              sidebarTab === "timeline"
+                ? "border-pictora-yellow text-pictora-yellow"
+                : "border-transparent text-white/40 hover:text-white/80"
+            )}
+          >
+            Timeline
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("cast")}
+            className={cn(
+              "flex-1 pb-2 border-b-2 transition-all cursor-pointer text-center",
+              sidebarTab === "cast"
+                ? "border-pictora-yellow text-pictora-yellow"
+                : "border-transparent text-white/40 hover:text-white/80"
+            )}
+          >
+            Cast
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("export")}
+            className={cn(
+              "flex-1 pb-2 border-b-2 transition-all cursor-pointer text-center",
+              sidebarTab === "export"
+                ? "border-pictora-yellow text-pictora-yellow"
+                : "border-transparent text-white/40 hover:text-white/80"
+            )}
+          >
+            Export
+          </button>
+        </div>
+      )}
+
+      {isCollapsed && viewMode === "video" && (
+        <div className="mb-4 flex gap-1 p-0.5 bg-black/30 rounded-lg border border-white/5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setSidebarTab("timeline")}
+            className={cn(
+              "p-1.5 rounded-md transition-all cursor-pointer",
+              sidebarTab === "timeline" ? "bg-pictora-yellow text-black" : "text-white/40 hover:text-white"
+            )}
+            title="Timeline"
+          >
+            <Layers className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("cast")}
+            className={cn(
+              "p-1.5 rounded-md transition-all cursor-pointer",
+              sidebarTab === "cast" ? "bg-pictora-yellow text-black" : "text-white/40 hover:text-white"
+            )}
+            title="Cast"
+          >
+            <Users className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("export")}
+            className={cn(
+              "p-1.5 rounded-md transition-all cursor-pointer",
+              sidebarTab === "export" ? "bg-pictora-yellow text-black" : "text-white/40 hover:text-white"
+            )}
+            title="Export"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Primary Scroll Content Area */}
       <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 w-full min-h-0 flex flex-col justify-between">
-        
-        {/* TAB 1: References (Always shown in canvas mode, or when selected in storyboard mode) */}
-        {(viewMode === "canvas" || sidebarTab === "references") ? (
+
+        {/* TAB 1: References (Always shown in canvas mode, or when selected in storyboard/video mode) */}
+        {(viewMode !== "video" || sidebarTab === "references") ? (
           <div className="space-y-4">
             {!isCollapsed && (
               <div className="pt-4 border-t border-white/5 space-y-3">
@@ -469,8 +576,8 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
                       onClick={() => setActiveSceneId(scene.id)}
                       className={cn(
                         "w-8 h-8 rounded-lg bg-black border flex items-center justify-center transition-all relative overflow-hidden select-none active:scale-95 cursor-pointer",
-                        isActive 
-                          ? "border-pictora-yellow ring-1 ring-pictora-yellow/20" 
+                        isActive
+                          ? "border-pictora-yellow ring-1 ring-pictora-yellow/20"
                           : "border-white/5 hover:border-white/10"
                       )}
                       title={`Scene ${scene.sceneNumber}: ${scene.title || "Untitled"}`}
@@ -489,8 +596,76 @@ export const Sidebar = ({ isCollapsed, onToggle }: { isCollapsed: boolean, onTog
             )}
           </div>
         )}
+
+        {/* VIDEO MODE CONTENT */}
+        {viewMode === "video" && (
+          <div className="space-y-4">
+            {/* Timeline Tab */}
+            {sidebarTab === "timeline" && (
+              <div className="space-y-4">
+                {!isCollapsed && (
+                  <div className="pt-4 border-t border-white/5 space-y-3">
+                    <div className="px-1">
+                      <span className="text-[9px] font-bold tracking-widest uppercase text-white/40">Timeline Overview</span>
+                    </div>
+                    <div className="bg-black/30 rounded-xl p-4 text-center">
+                      <Layers className="w-6 h-6 text-pictora-yellow mx-auto mb-2" />
+                      <p className="text-xs text-white/60">Video timeline controls will appear here</p>
+                      <p className="text-[10px] text-white/40 mt-1">Drag scenes to reorder, adjust timing, and manage clips</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cast Tab */}
+            {sidebarTab === "cast" && (
+              <div className="space-y-4">
+                {!isCollapsed && (
+                  <div className="pt-4 border-t border-white/5 space-y-3">
+                    <div className="px-1">
+                      <span className="text-[9px] font-bold tracking-widest uppercase text-white/40">Cast Members</span>
+                    </div>
+                    <div className="bg-black/30 rounded-xl p-4 text-center">
+                      <Users className="w-6 h-6 text-sky-400 mx-auto mb-2" />
+                      <p className="text-xs text-white/60">Manage cast members for your video production</p>
+                      <p className="text-[10px] text-white/40 mt-1">AI-generated characters, voice styles, and roles</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Export Tab */}
+            {sidebarTab === "export" && (
+              <div className="space-y-4">
+                {!isCollapsed && (
+                  <div className="pt-4 border-t border-white/5 space-y-3">
+                    <div className="px-1">
+                      <span className="text-[9px] font-bold tracking-widest uppercase text-white/40">Export Options</span>
+                    </div>
+                    <div className="bg-black/30 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-pictora-yellow/20 rounded-lg flex items-center justify-center">
+                          <Download className="w-5 h-5 text-pictora-yellow" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-white">Render Video</p>
+                          <p className="text-[10px] text-white/40">Quality: 1080p • Format: MP4</p>
+                        </div>
+                      </div>
+                      <button className="w-full py-1.5 bg-pictora-yellow text-black rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                        Export Video
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      
+
       {/* Settings / Logged Email Profile Footer */}
       <div className="mt-auto pt-4 border-t border-white/5 relative w-full flex justify-center shrink-0" ref={profileMenuRef}>
         <button 

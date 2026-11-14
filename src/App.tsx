@@ -9,12 +9,15 @@ import { Sidebar } from "./features/generator/components/Sidebar";
 import { Canvas } from "./features/generator/components/Canvas";
 import { PromptBar } from "./features/generator/components/PromptBar";
 import { StoryboardWorkspace } from "./features/generator/components/StoryboardWorkspace";
+import { VideoWorkspace } from "./features/video/components/VideoWorkspace";
 import { HistorySidebar } from "./features/generator/components/HistorySidebar";
 import { SplashScreen } from "./features/ui/SplashScreen";
 import { SignInScreen } from "./features/ui/SignInScreen";
 import { AnimatePresence, motion } from "motion/react";
 import { useGeneratorStore } from "./features/generator/store/useGeneratorStore";
-import { Keyboard, ArrowRight } from "lucide-react";
+import { Keyboard, ArrowRight, Film, Palette } from "lucide-react";
+
+type Mode = "cast" | "storyboard" | "video";
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -22,6 +25,16 @@ export default function App() {
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false); // Default to open for space utilization
   const [showShortcuts, setShowShortcuts] = useState(false);
   const { viewMode, isAuthenticated } = useGeneratorStore();
+
+  // Use local state for animation transitions to ensure smooth transitions
+  const [localViewMode, setLocalViewMode] = useState<Mode>("cast");
+
+  // Sync local state with store
+  useEffect(() => {
+    if (viewMode !== undefined) {
+      setLocalViewMode(viewMode as Mode);
+    }
+  }, [viewMode]);
 
 type Shortcut = { key: string; label: string; group: string };
 
@@ -32,7 +45,10 @@ type Shortcut = { key: string; label: string; group: string };
     { key: "E", label: "Refine prompt with AI", group: "Prompt Bar" },
     { key: "1-9", label: "Aspect ratio presets (via panel)", group: "Prompt Bar" },
     { key: "← / →", label: "Navigate storyboard scenes", group: "Storyboard" },
-    { key: "Space", label: "Play/pause presentation", group: "Storyboard" },
+    { key: "1", label: "Switch to Cast mode", group: "Navigation" },
+    { key: "2", label: "Switch to Storyboard mode", group: "Navigation" },
+    { key: "3", label: "Switch to Video mode", group: "Navigation" },
+    { key: "Space", label: "Play/pause presentation", group: "Video" },
     { key: "Esc", label: "Close modals / cancel", group: "Global" },
   ];
 
@@ -46,6 +62,19 @@ type Shortcut = { key: string; label: string; group: string };
         e.preventDefault();
         generateImages();
       }
+      // Navigation shortcuts
+      if (e.key === "1") {
+        e.preventDefault();
+        useGeneratorStore.getState().setViewMode("cast");
+      }
+      if (e.key === "2") {
+        e.preventDefault();
+        useGeneratorStore.getState().setViewMode("storyboard");
+      }
+      if (e.key === "3") {
+        e.preventDefault();
+        useGeneratorStore.getState().setViewMode("video");
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -56,6 +85,18 @@ type Shortcut = { key: string; label: string; group: string };
     // Trigger via store (uses the global generator state)
     const store = useGeneratorStore.getState();
     store.generateImages();
+  };
+
+  // Get mode label and icon
+  const getModeConfig = (mode: Mode) => {
+    switch (mode) {
+      case "cast":
+        return { label: "CAST", icon: Palette };
+      case "storyboard":
+        return { label: "STORYBOARD", icon: Film };
+      case "video":
+        return { label: "VIDEO", icon: Film };
+    }
   };
 
   return (
@@ -69,25 +110,56 @@ type Shortcut = { key: string; label: string; group: string };
         <SignInScreen />
       ) : (
         <div className="flex h-screen w-full bg-pictora-bg overflow-hidden relative">
-          <Sidebar 
-            isCollapsed={isSidebarCollapsed} 
-            onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          <Sidebar
+            isCollapsed={isSidebarCollapsed}
+            onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
-          
+
           <main className="flex-1 relative flex flex-col h-full min-w-0">
-            {viewMode === "storyboard" ? (
-              <StoryboardWorkspace />
-            ) : (
-              <>
-                <Canvas />
-                <PromptBar />
-              </>
-            )}
+            <AnimatePresence mode="wait">
+              {localViewMode === "storyboard" && (
+                <motion.div
+                  key="storyboard"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <StoryboardWorkspace />
+                </motion.div>
+              )}
+
+              {localViewMode === "video" && (
+                <motion.div
+                  key="video"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <VideoWorkspace />
+                </motion.div>
+              )}
+
+              {(localViewMode === "cast" || localViewMode === "storyboard") && (
+                <motion.div
+                  key="cast-content"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="flex-1 flex flex-col"
+                >
+                  <Canvas />
+                  <PromptBar />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </main>
 
-          <HistorySidebar 
-            isCollapsed={isHistoryCollapsed} 
-            onToggle={() => setIsHistoryCollapsed(!isHistoryCollapsed)} 
+          <HistorySidebar
+            isCollapsed={isHistoryCollapsed}
+            onToggle={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
           />
 
           {/* Keyboard Shortcuts Help Modal */}
